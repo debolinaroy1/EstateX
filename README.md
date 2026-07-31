@@ -4,16 +4,14 @@ EstateX is a modern, responsive real estate frontend that provides a premium pro
 
 ## 🚀 Live Demo
 
-> Add your deployed website link here
-
 Example:
-https://estatex.vercel.app
+https://estate-x-dr.vercel.app/
 
 ---
 
 ## 📸 Preview
 
-> Add screenshots or GIFs here
+<img width="1900" height="915" alt="image" src="https://github.com/user-attachments/assets/6188de66-3246-49be-8950-f9612e3e9323" />
 
 ---
 
@@ -169,9 +167,9 @@ This project is licensed under the MIT License.
 
 GitHub: https://github.com/debolinaroy1
 
-LinkedIn: *(Add your LinkedIn profile here)*
+LinkedIn: https://www.linkedin.com/in/debolina-roy-293462343/
 
-Email: *(Add your email here)*
+Email: roydebolina978@gmail.com
 
 ---
 
