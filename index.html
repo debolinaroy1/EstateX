@@ -1,0 +1,1320 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstateX — Premium Real Estate Platform</title>
+  <meta name="description" content="EstateX is a modern premium real estate platform to find, compare and schedule visits for dream properties." />
+  <meta name="theme-color" content="#0F172A" />
+  <script>
+    (function () {
+      try {
+        const d = localStorage.getItem('estatex-dark');
+        if (d === 'true' || (!d && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#0F172A',
+              blue: '#2563EB',
+              sky: '#38BDF8',
+              amber: '#F59E0B',
+            },
+          },
+          fontFamily: {
+            poppins: ['Poppins', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="font-inter text-slate-700 dark:text-slate-300 bg-white dark:bg-brand-dark antialiased overflow-x-hidden selection:bg-brand-blue selection:text-white">
+  <div x-data="estatex()" x-init="initApp()" x-cloak>
+
+    <!-- Scroll Progress -->
+    <div class="fixed top-0 left-0 h-1 bg-gradient-to-r from-brand-blue to-brand-sky z-[60] transition-all duration-75"
+         :style="`width:${scrollPercent}%`"></div>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 inset-x-0 z-50 transition-all duration-300"
+         :class="scrolled || currentPage !== 'home' ? 'bg-white/85 dark:bg-brand-dark/85 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <a href="#home" @click.prevent="navigate('home')" class="flex items-center gap-2 group" aria-label="EstateX Home">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-blue to-brand-sky flex items-center justify-center text-white font-poppins font-bold text-xl shadow-lg shadow-brand-blue/30 group-hover:rotate-12 transition">E</div>
+          <span class="font-poppins font-bold text-2xl transition"
+                :class="scrolled || currentPage !== 'home' ? 'text-brand-dark dark:text-white' : 'text-white'">
+            Estate<span class="text-brand-blue">X</span>
+          </span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-8">
+          <template x-for="item in navItems" :key="item.page">
+            <a :href="'#'+item.page"
+               @click.prevent="navigate(item.page)"
+               class="relative text-sm font-medium transition-colors focus-ring rounded px-1 py-1"
+               :class="currentPage === item.page ? 'text-brand-blue' : (scrolled || currentPage !== 'home' ? 'text-slate-600 dark:text-slate-300 hover:text-brand-blue' : 'text-white/90 hover:text-white')">
+              <span x-text="item.label"></span>
+              <span class="absolute -bottom-1 left-0 h-0.5 bg-brand-blue transition-all duration-300"
+                    :class="currentPage === item.page ? 'w-full' : 'w-0 group-hover:w-full'"></span>
+            </a>
+          </template>
+        </div>
+
+        <div class="hidden md:flex items-center gap-4">
+          <button @click="toggleDark" class="w-10 h-10 rounded-full flex items-center justify-center transition focus-ring"
+                  :class="scrolled || currentPage !== 'home' ? 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300' : 'hover:bg-white/10 text-white'"
+                  aria-label="Toggle dark mode">
+            <span x-html="darkMode ? icon('sun') : icon('moon')"></span>
+          </button>
+          <button @click="navigate('properties')" class="magnetic px-5 py-2.5 rounded-full bg-brand-blue text-white font-medium hover:bg-brand-sky transition shadow-lg shadow-brand-blue/30 focus-ring">
+            Explore
+          </button>
+        </div>
+
+        <button @click="menuOpen = !menuOpen" class="md:hidden w-10 h-10 rounded-lg flex items-center justify-center focus-ring"
+                :class="scrolled || currentPage !== 'home' ? 'text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800' : 'text-white hover:bg-white/10'"
+                aria-label="Toggle menu">
+          <span x-show="!menuOpen" x-html="icon('menu')"></span>
+          <span x-show="menuOpen" x-html="icon('x')"></span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div x-show="menuOpen"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-4"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100 translate-y-0"
+           x-transition:leave-end="opacity-0 -translate-y-4"
+           class="md:hidden absolute top-full inset-x-0 bg-white dark:bg-brand-dark border-t dark:border-slate-800 shadow-2xl p-4">
+        <div class="flex flex-col gap-2">
+          <template x-for="item in navItems" :key="item.page">
+            <a :href="'#'+item.page"
+               @click.prevent="navigate(item.page); menuOpen=false"
+               class="px-4 py-3 rounded-xl font-medium transition"
+               :class="currentPage === item.page ? 'bg-brand-blue/10 text-brand-blue' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'"
+               x-text="item.label"></a>
+          </template>
+          <div class="border-t dark:border-slate-800 pt-3 flex items-center justify-between">
+            <span class="text-sm text-slate-500">Theme</span>
+            <button @click="toggleDark" class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+              <span x-html="darkMode ? icon('sun','w-4 h-4') : icon('moon','w-4 h-4')"></span>
+              <span x-text="darkMode ? 'Light mode' : 'Dark mode'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div x-show="loading"
+         x-transition.opacity
+         class="fixed inset-0 z-[55] flex items-center justify-center bg-white/80 dark:bg-brand-dark/80 backdrop-blur-sm">
+      <div class="flex flex-col items-center">
+        <div class="w-12 h-12 rounded-full border-4 border-brand-blue/20 border-t-brand-blue animate-spin mb-4"></div>
+        <p class="text-sm font-medium text-brand-dark dark:text-white">Loading EstateX…</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+
+      <!-- HOME PAGE -->
+      <section x-show="currentPage === 'home'" x-transition.opacity class="relative">
+        
+        <!-- Hero -->
+        <section class="relative min-h-screen flex items-center overflow-hidden">
+          <div class="hero-bg absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center scale-105"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-brand-dark/95 via-brand-dark/70 to-brand-dark/30"></div>
+          <div class="blob absolute top-20 left-10 w-72 h-72 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="blob absolute bottom-20 right-10 w-96 h-96 bg-brand-sky/10 rounded-full blur-3xl pointer-events-none" style="animation-delay:2s"></div>
+
+          <div class="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center pt-28 pb-20">
+            <div class="space-y-8 max-w-2xl">
+              <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-white/90 text-sm animate-fade-up">
+                <span x-html="icon('sparkles','w-4 h-4')"></span>
+                <span>Find your dream home today</span>
+              </div>
+              <h1 class="font-poppins text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] animate-fade-up" style="animation-delay:0.1s">
+                Build Your Future.<br>
+                <span class="text-gradient">One Property</span> at a Time.
+              </h1>
+              <p class="text-lg text-slate-200 max-w-xl animate-fade-up" style="animation-delay:0.2s">
+                Discover premium homes, luxury villas, and investment opportunities curated by top agents across the globe.
+              </p>
+
+              <!-- Search Box -->
+              <div class="glass rounded-2xl p-4 md:p-6 animate-fade-up relative" style="animation-delay:0.3s">
+                <div class="grid md:grid-cols-4 gap-4">
+                  <div class="relative">
+                    <label class="block text-xs text-white/70 uppercase tracking-wider mb-1">Location</label>
+                    <input x-model="heroSearch"
+                           @input="updateSuggestions(heroSearch)"
+                           @keydown.escape="suggestions=[]"
+                           type="text"
+                           placeholder="City, neighborhood..."
+                           class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-brand-sky focus:ring-1 focus:ring-brand-sky transition" />
+                    <div x-show="suggestions.length" @click.outside="suggestions=[]" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden z-20 border dark:border-slate-700">
+                      <template x-for="s in suggestions" :key="s.id">
+                        <button @click="selectSuggestion(s)" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-200 text-sm">
+                          <span x-html="icon('mapPin','w-4 h-4 text-brand-blue')"></span>
+                          <span x-text="s.title + ' — ' + s.location"></span>
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-white/70 uppercase tracking-wider mb-1">Type</label>
+                    <select x-model="heroType" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-sky transition appearance-none cursor-pointer">
+                      <option value="" class="text-slate-800">All Types</option>
+                      <template x-for="t in propertyTypes" :key="t">
+                        <option :value="t" class="text-slate-800" x-text="t"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-white/70 uppercase tracking-wider mb-1">Budget</label>
+                    <select x-model="heroBudget" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-sky transition appearance-none cursor-pointer">
+                      <option value="" class="text-slate-800">Any</option>
+                      <option value="500000" class="text-slate-800">Up to $500k</option>
+                      <option value="1000000" class="text-slate-800">Up to $1M</option>
+                      <option value="2000000" class="text-slate-800">Up to $2M</option>
+                      <option value="2000001" class="text-slate-800">$2M+</option>
+                    </select>
+                  </div>
+                  <button @click="searchFromHero"
+                          class="magnetic self-end h-[50px] rounded-xl bg-brand-blue hover:bg-brand-sky text-white font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-brand-blue/30">
+                    <span>Search</span>
+                    <span x-html="icon('search','w-5 h-5')"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating Cards -->
+            <div class="hidden lg:block relative h-[520px]">
+              <div class="absolute top-8 right-12 glass rounded-2xl p-4 w-64 animate-float shadow-2xl cursor-pointer hover:scale-105 transition"
+                   @click="navigate('property',{id:1})">
+                <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=400&q=80" alt="Villa" class="rounded-xl h-36 object-cover w-full mb-3" />
+                <p class="text-white font-semibold">Modern Hillside Villa</p>
+                <p class="text-brand-sky font-bold mt-1" x-text="formatPrice(1250000)"></p>
+              </div>
+              <div class="absolute bottom-16 left-8 glass rounded-2xl p-4 w-56 animate-float-delayed shadow-2xl">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-full bg-brand-sky flex items-center justify-center text-white" x-html="icon('trend','w-5 h-5')"></div>
+                  <div>
+                    <p class="text-white font-semibold text-sm">Market Value</p>
+                    <p class="text-white/70 text-xs">+12.5% this year</p>
+                  </div>
+                </div>
+                <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div class="h-full w-3/4 bg-brand-sky rounded-full"></div>
+                </div>
+              </div>
+              <div class="absolute top-1/2 left-1/3 glass rounded-2xl px-4 py-3 animate-float shadow-xl" style="animation-delay:1.5s">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+                  <span class="text-white text-sm font-medium">500+ happy clients</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/70">
+            <span class="text-xs uppercase tracking-widest mb-2">Scroll</span>
+            <span x-html="icon('chevronDown','w-5 h-5 animate-bounce')"></span>
+          </div>
+        </section>
+
+        <!-- Trusted By -->
+        <section class="py-14 bg-slate-50 dark:bg-slate-900/50 border-b dark:border-slate-800">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-slate-500 mb-8 uppercase tracking-widest">Trusted by leading companies</p>
+            <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale dark:grayscale hover:grayscale-0 transition-all">
+              <template x-for="p in partners" :key="p">
+                <span class="font-poppins font-bold text-2xl text-slate-700 dark:text-slate-300" x-text="p"></span>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Featured Properties -->
+        <section class="py-24 bg-white dark:bg-brand-dark relative">
+          <div class="absolute inset-0 bg-grid pointer-events-none"></div>
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 reveal">
+              <div>
+                <span class="text-brand-blue font-semibold tracking-wide uppercase text-sm">Featured</span>
+                <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">Premium properties for you</h2>
+              </div>
+              <button @click="navigate('properties')" class="mt-4 md:mt-0 text-brand-blue font-medium hover:underline flex items-center gap-2 group">
+                View all
+                <span x-html="icon('arrowRight','w-4 h-4 group-hover:translate-x-1 transition')"></span>
+              </button>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <template x-for="property in featuredProperties" :key="property.id">
+                <article @click="navigate('property',{id:property.id})"
+                         @mousemove="tilt($event, $el)" @mouseleave="resetTilt($el)"
+                         class="tilt-card group cursor-pointer bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-brand-blue/10 transition-all duration-300 border border-slate-100 dark:border-slate-700 reveal">
+                  <div class="relative overflow-hidden h-64">
+                    <img :src="property.image" :alt="property.title" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div class="absolute top-4 left-4 flex gap-2">
+                      <span class="px-3 py-1 rounded-full bg-brand-blue text-white text-xs font-semibold shadow" x-text="property.status"></span>
+                      <span class="px-3 py-1 rounded-full glass text-white text-xs" x-text="property.type"></span>
+                    </div>
+                    <button @click.stop="toggleWishlist(property.id)"
+                            class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center transition focus-ring"
+                            :class="isWishlisted(property.id) ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'"
+                            :aria-label="isWishlisted(property.id)?'Remove from wishlist':'Save property'">
+                      <span x-html="icon('heart','w-5 h-5')"></span>
+                    </button>
+                  </div>
+                  <div class="p-6">
+                    <div class="flex justify-between items-start mb-2 gap-3">
+                      <h3 class="font-poppins font-semibold text-lg text-brand-dark dark:text-white group-hover:text-brand-blue transition line-clamp-1" x-text="property.title"></h3>
+                      <p class="text-brand-blue font-bold whitespace-nowrap" x-text="formatPrice(property.price)"></p>
+                    </div>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-4 flex items-center gap-1">
+                      <span x-html="icon('mapPin','w-4 h-4')"></span>
+                      <span x-text="property.location"></span>
+                    </p>
+                    <div class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 border-t dark:border-slate-700 pt-4">
+                      <span class="flex items-center gap-1"><span x-html="icon('bed','w-4 h-4')"></span> <span x-text="property.beds"></span> Beds</span>
+                      <span class="flex items-center gap-1"><span x-html="icon('bath','w-4 h-4')"></span> <span x-text="property.baths"></span> Baths</span>
+                      <span class="flex items-center gap-1"><span x-html="icon('area','w-4 h-4')"></span> <span x-text="property.area"></span> sqft</span>
+                    </div>
+                  </div>
+                </article>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Why Choose Us -->
+        <section class="py-24 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16 reveal">
+              <span class="text-brand-blue font-semibold uppercase text-sm">Why EstateX</span>
+              <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">The smarter way to find property</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <template x-for="(item, idx) in whyChoose" :key="idx">
+                <div class="group p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition duration-300 reveal"
+                     :style="`transition-delay:${idx*80}ms`">
+                  <div class="w-14 h-14 rounded-2xl bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                    <span x-html="icon(item.icon,'w-7 h-7')"></span>
+                  </div>
+                  <h3 class="font-poppins font-semibold text-xl text-brand-dark dark:text-white mb-3" x-text="item.title"></h3>
+                  <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" x-text="item.text"></p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Categories -->
+        <section class="py-24 bg-white dark:bg-brand-dark relative overflow-hidden">
+          <div class="absolute -top-32 -right-32 w-96 h-96 bg-brand-blue/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 reveal">
+              <div>
+                <span class="text-brand-blue font-semibold uppercase text-sm">Categories</span>
+                <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">Browse by property type</h2>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              <template x-for="cat in categories" :key="cat.name">
+                <button @click="filters.type=cat.name; navigate('properties')"
+                        class="group relative h-48 rounded-2xl overflow-hidden shadow-lg focus-ring">
+                  <img :src="cat.image" :alt="cat.name" loading="lazy" class="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 to-transparent"></div>
+                  <div class="absolute bottom-0 left-0 p-5 text-left">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white mb-3 group-hover:bg-brand-blue transition">
+                      <span x-html="icon(cat.icon,'w-5 h-5')"></span>
+                    </div>
+                    <h3 class="font-poppins font-semibold text-white text-lg" x-text="cat.name"></h3>
+                    <p class="text-white/70 text-sm"><span x-text="cat.count"></span> listings</p>
+                  </div>
+                </button>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Statistics -->
+        <section id="stats-section" class="py-24 bg-brand-dark text-white relative overflow-hidden">
+          <div class="absolute inset-0 bg-grid opacity-30"></div>
+          <div class="blob absolute -top-20 right-20 w-80 h-80 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <template x-for="(stat, idx) in stats" :key="idx">
+                <div class="text-center p-8 rounded-2xl glass border border-white/10 reveal"
+                     :style="`transition-delay:${idx*100}ms`">
+                  <div class="text-4xl md:text-5xl font-poppins font-bold text-brand-sky mb-2">
+                    <span class="counter" x-text="stat.display"></span><span x-text="stat.suffix"></span>
+                  </div>
+                  <p class="text-slate-300" x-text="stat.label"></p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="py-24 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-14 reveal">
+              <span class="text-brand-blue font-semibold uppercase text-sm">Testimonials</span>
+              <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">What our clients say</h2>
+            </div>
+            <div class="swiper testimonials-swiper pb-12 reveal">
+              <div class="swiper-wrapper">
+                <template x-for="t in testimonials" :key="t.id">
+                  <div class="swiper-slide">
+                    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 h-3em flex flex-col">
+                      <div class="flex text-amber-400 mb-4 gap-1">
+                        <template x-for="i in 5" :key="i">
+                          <span x-html="icon('star','w-4 h-4')" :class="i <= t.rating ? 'text-amber-400' : 'text-slate-300'"></span>
+                        </template>
+                      </div>
+                      <p class="text-slate-600 dark:text-slate-300 mb-6 flex-1" x-text="t.text"></p>
+                      <div class="flex items-center gap-4">
+                        <img :src="t.avatar" :alt="t.name" loading="lazy" class="w-12 h-12 rounded-full object-cover" />
+                        <div>
+                          <p class="font-semibold text-brand-dark dark:text-white" x-text="t.name"></p>
+                          <p class="text-sm text-slate-500" x-text="t.role"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Agents -->
+        <section class="py-24 bg-white dark:bg-brand-dark">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 reveal">
+              <div>
+                <span class="text-brand-blue font-semibold uppercase text-sm">Our Team</span>
+                <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">Meet our agents</h2>
+              </div>
+              <button @click="navigate('agents')" class="mt-4 md:mt-0 text-brand-blue font-medium hover:underline flex items-center gap-2">
+                All agents <span x-html="icon('arrowRight','w-4 h-4')"></span>
+              </button>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <template x-for="agent in agents.slice(0,4)" :key="agent.id">
+                <div class="group bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-slate-100 dark:border-slate-700 reveal">
+                  <div class="relative h-72 overflow-hidden">
+                    <img :src="agent.image" :alt="agent.name" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                    <div class="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-brand-dark/90 to-transparent opacity-0 group-hover:opacity-100 transition flex gap-3 justify-center">
+                      <template x-for="s in ['facebook','twitter','linkedin']" :key="s">
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-brand-blue transition" aria-label="Social">
+                          <span x-html="icon(s,'w-4 h-4')"></span>
+                        </a>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="p-5 text-center">
+                    <h3 class="font-poppins font-semibold text-lg text-brand-dark dark:text-white" x-text="agent.name"></h3>
+                    <p class="text-sm text-slate-500 mb-3" x-text="agent.role"></p>
+                    <div class="flex justify-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                      <span><span x-text="agent.sold"></span> Sold</span>
+                      <span><span x-text="agent.exp"></span> yrs exp.</span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Blog -->
+        <section class="py-24 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-14 reveal">
+              <span class="text-brand-blue font-semibold uppercase text-sm">Journal</span>
+              <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2">Latest from our blog</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+              <template x-for="post in blogs" :key="post.id">
+                <article class="group bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-slate-100 dark:border-slate-700 reveal">
+                  <div class="h-56 overflow-hidden">
+                    <img :src="post.image" :alt="post.title" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                  </div>
+                  <div class="p-6">
+                    <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+                      <span x-text="post.date"></span>
+                      <span class="w-1 h-1 rounded-full bg-slate-400"></span>
+                      <span x-text="post.category"></span>
+                    </div>
+                    <h3 class="font-poppins font-semibold text-xl text-brand-dark dark:text-white mb-3 group-hover:text-brand-blue transition" x-text="post.title"></h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2" x-text="post.excerpt"></p>
+                    <button class="text-brand-blue font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition">Read more <span x-html="icon('arrowRight','w-4 h-4')"></span></button>
+                  </div>
+                </article>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA Banner -->
+        <section class="relative py-28 overflow-hidden">
+          <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-fixed bg-center"></div>
+          <div class="absolute inset-0 bg-brand-dark/80"></div>
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative text-center reveal">
+            <h2 class="font-poppins text-3xl md:text-5xl font-bold text-white mb-6">Ready to Make Your Dream Property a Reality?</h2>
+            <p class="text-slate-200 max-w-2xl mx-auto mb-10 text-lg">Join thousands of happy homeowners. Schedule a visit or speak with an agent today.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+              <button @click="navigate('properties')" class="magnetic px-8 py-4 rounded-full bg-brand-blue text-white font-semibold hover:bg-brand-sky transition shadow-xl shadow-brand-blue/30">Find your home</button>
+              <button @click="navigate('contact')" class="magnetic px-8 py-4 rounded-full glass text-white font-semibold hover:bg-white/20 transition">Contact us</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- PROPERTIES PAGE -->
+      <section x-show="currentPage === 'properties'" x-transition.opacity>
+        <div class="pt-28 pb-12 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="font-poppins text-3xl md:text-5xl font-bold text-brand-dark dark:text-white">Properties</h1>
+            <p class="mt-2 text-slate-500 dark:text-slate-400">Find your perfect property from our curated listings.</p>
+          </div>
+        </div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Sidebar Filters -->
+            <aside class="w-full lg:w-72 shrink-0">
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700 sticky top-24">
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="font-poppins font-semibold text-brand-dark dark:text-white flex items-center gap-2">
+                    <span x-html="icon('filter','w-5 h-5')"></span> Filters
+                  </h3>
+                  <button @click="resetFilters" class="text-sm text-brand-blue hover:underline">Reset</button>
+                </div>
+                <div class="space-y-5">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+                    <input x-model="filters.search" type="text" placeholder="Keyword or location" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-slate-500 mb-1">Min Price</label>
+                      <input x-model.number="filters.minPrice" type="number" placeholder="$" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-slate-500 mb-1">Max Price</label>
+                      <input x-model.number="filters.maxPrice" type="number" placeholder="$" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-slate-500 mb-1">Beds</label>
+                      <select x-model="filters.beds" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white">
+                        <option value="">Any</option>
+                        <option value="1">1+</option>
+                        <option value="2">2+</option>
+                        <option value="3">3+</option>
+                        <option value="4">4+</option>
+                        <option value="5">5+</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-slate-500 mb-1">Baths</label>
+                      <select x-model="filters.baths" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white">
+                        <option value="">Any</option>
+                        <option value="1">1+</option>
+                        <option value="2">2+</option>
+                        <option value="3">3+</option>
+                        <option value="4">4+</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Property Type</label>
+                    <select x-model="filters.type" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white">
+                      <option value="">All Types</option>
+                      <template x-for="t in propertyTypes" :key="t">
+                        <option :value="t" x-text="t"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
+                    <select x-model="filters.status" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white">
+                      <option value="">All</option>
+                      <option value="For Sale">For Sale</option>
+                      <option value="For Rent">For Rent</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <!-- Results -->
+            <div class="flex-1">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <p class="text-slate-500 dark:text-slate-400">Showing <span x-text="paginatedProperties().length"></span> of <span x-text="filteredProperties().length"></span> results</p>
+                <div class="flex items-center gap-3">
+                  <select x-model="filters.sort" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white">
+                    <option value="featured">Featured</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Skeleton -->
+              <div x-show="loading" class="grid md:grid-cols-2 gap-6">
+                <template x-for="i in 4" :key="i">
+                  <div class="h-96 rounded-2xl bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div class="h-3/5 shimmer"></div>
+                    <div class="p-6 space-y-3">
+                      <div class="h-5 w-2/3 rounded bg-slate-300 dark:bg-slate-600 shimmer"></div>
+                      <div class="h-4 w-1/2 rounded bg-slate-300 dark:bg-slate-600 shimmer"></div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Grid -->
+              <div x-show="!loading" class="grid md:grid-cols-2 gap-6">
+                <template x-for="property in paginatedProperties()" :key="property.id">
+                  <article @click="navigate('property',{id:property.id})"
+                           class="group cursor-pointer bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-slate-100 dark:border-slate-700">
+                    <div class="relative h-60 overflow-hidden">
+                      <img :src="property.image" :alt="property.title" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                      <div class="absolute top-4 left-4 flex gap-2">
+                        <span class="px-3 py-1 rounded-full bg-brand-blue text-white text-xs font-semibold" x-text="property.status"></span>
+                        <span class="px-3 py-1 rounded-full glass text-white text-xs" x-text="property.type"></span>
+                      </div>
+                      <button @click.stop="toggleWishlist(property.id)"
+                              class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center transition focus-ring"
+                              :class="isWishlisted(property.id) ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'"
+                              aria-label="Save property">
+                        <span x-html="icon('heart','w-5 h-5')"></span>
+                      </button>
+                    </div>
+                    <div class="p-6">
+                      <div class="flex justify-between items-start mb-2 gap-3">
+                        <h3 class="font-poppins font-semibold text-lg text-brand-dark dark:text-white group-hover:text-brand-blue transition line-clamp-1" x-text="property.title"></h3>
+                        <p class="text-brand-blue font-bold whitespace-nowrap" x-text="formatPrice(property.price)"></p>
+                      </div>
+                      <p class="text-slate-500 dark:text-slate-400 text-sm mb-4 flex items-center gap-1">
+                        <span x-html="icon('mapPin','w-4 h-4')"></span> <span x-text="property.location"></span>
+                      </p>
+                      <div class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 border-t dark:border-slate-700 pt-4">
+                        <span class="flex items-center gap-1"><span x-html="icon('bed','w-4 h-4')"></span> <span x-text="property.beds"></span></span>
+                        <span class="flex items-center gap-1"><span x-html="icon('bath','w-4 h-4')"></span> <span x-text="property.baths"></span></span>
+                        <span class="flex items-center gap-1"><span x-html="icon('area','w-4 h-4')"></span> <span x-text="property.area"></span> sqft</span>
+                      </div>
+                      <div class="mt-4 pt-4 border-t dark:border-slate-700 flex items-center justify-between">
+                        <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                          <input type="checkbox" :checked="compareList.includes(property.id)" @change="toggleCompare(property.id)" class="rounded text-brand-blue focus:ring-brand-blue" />
+                          Compare
+                        </label>
+                        <button @click.stop="openSchedule(property.id)" class="text-sm text-brand-blue font-medium hover:underline">Schedule visit</button>
+                      </div>
+                    </div>
+                  </article>
+                </template>
+              </div>
+
+              <!-- Empty State -->
+              <div x-show="!loading && paginatedProperties().length === 0" class="text-center py-24">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 mb-6 text-slate-400" x-html="icon('search','w-10 h-10')"></div>
+                <h3 class="text-xl font-semibold text-brand-dark dark:text-white">No properties found</h3>
+                <p class="text-slate-500 mt-2">Try adjusting your filters or search query.</p>
+              </div>
+
+              <!-- Pagination -->
+              <div x-show="totalPages() > 1" class="flex justify-center flex-wrap gap-2 mt-10">
+                <button @click="page > 1 && page--" :disabled="page === 1" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 dark:text-white">Prev</button>
+                <template x-for="p in totalPages()" :key="p">
+                  <button @click="page = p"
+                          :class="page === p ? 'bg-brand-blue text-white border-brand-blue' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:text-white hover:border-brand-blue'"
+                          class="px-4 py-2 rounded-lg border transition" x-text="p"></button>
+                </template>
+                <button @click="page < totalPages() && page++" :disabled="page === totalPages()" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 dark:text-white">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROPERTY DETAILS PAGE -->
+      <section x-show="currentPage === 'property'" x-transition.opacity>
+        <template x-if="selectedProperty">
+          <div>
+            <div class="pt-28 pb-8 container mx-auto px-4 sm:px-6 lg:px-8">
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-3 py-1 rounded-full bg-brand-blue text-white text-xs font-semibold" x-text="selectedProperty.status"></span>
+                <span class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs" x-text="selectedProperty.type"></span>
+              </div>
+              <h1 class="font-poppins text-3xl md:text-5xl font-bold text-brand-dark dark:text-white" x-text="selectedProperty.title"></h1>
+              <p class="mt-3 flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <span x-html="icon('mapPin','w-5 h-5')"></span>
+                <span x-text="selectedProperty.location"></span>
+              </p>
+            </div>
+
+            <!-- Gallery -->
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div class="grid md:grid-cols-3 gap-4 h-[500px]">
+                <div class="md:col-span-2 relative rounded-2xl overflow-hidden cursor-pointer group" @click="openLightbox(0)">
+                  <img :src="selectedProperty.images[0]" :alt="selectedProperty.title" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition"></div>
+                </div>
+                <div class="grid grid-rows-2 gap-4">
+                  <div class="relative rounded-2xl overflow-hidden cursor-pointer group" @click="openLightbox(1)">
+                    <img :src="selectedProperty.images[1]" alt="Interior" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-105" />
+                  </div>
+                  <div class="relative rounded-2xl overflow-hidden cursor-pointer group" @click="openLightbox(2)">
+                    <img :src="selectedProperty.images[2]" alt="Interior" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-105" />
+                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-semibold">
+                      +<span x-text="selectedProperty.images.length - 3"></span> photos
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16 grid lg:grid-cols-3 gap-12">
+              <div class="lg:col-span-2 space-y-10">
+                <div>
+                  <h2 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-4">Description</h2>
+                  <p class="text-slate-600 dark:text-slate-300 leading-relaxed" x-text="selectedProperty.description"></p>
+                </div>
+
+                <div>
+                  <h2 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-4">Amenities</h2>
+                  <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <template x-for="amenity in selectedProperty.amenities" :key="amenity">
+                      <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                        <span x-html="icon('check','w-5 h-5 text-brand-blue')"></span>
+                        <span class="text-slate-700 dark:text-slate-200" x-text="amenity"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Map Placeholder -->
+                <div class="rounded-2xl overflow-hidden h-80 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center border dark:border-slate-700">
+                  <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80" alt="Map area" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-40 dark:opacity-20" />
+                  <div class="relative z-10 text-center">
+                    <div class="w-14 h-14 rounded-full bg-brand-blue text-white flex items-center justify-center mx-auto mb-3" x-html="icon('mapPin','w-7 h-7')"></div>
+                    <p class="font-semibold text-brand-dark dark:text-white">Interactive Map</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Map integration placeholder</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sidebar -->
+              <aside class="space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-100 dark:border-slate-700 sticky top-24">
+                  <p class="text-3xl font-bold text-brand-blue mb-1" x-text="formatPrice(selectedProperty.price)"></p>
+                  <p class="text-sm text-slate-500 mb-6" x-text="selectedProperty.status"></p>
+                  <div class="grid grid-cols-3 gap-2 mb-6">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-center">
+                      <span x-html="icon('bed','w-5 h-5 mx-auto text-brand-blue')"></span>
+                      <p class="font-semibold text-brand-dark dark:text-white mt-1" x-text="selectedProperty.beds"></p>
+                      <p class="text-xs text-slate-500">Beds</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-center">
+                      <span x-html="icon('bath','w-5 h-5 mx-auto text-brand-blue')"></span>
+                      <p class="font-semibold text-brand-dark dark:text-white mt-1" x-text="selectedProperty.baths"></p>
+                      <p class="text-xs text-slate-500">Baths</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-center">
+                      <span x-html="icon('area','w-5 h-5 mx-auto text-brand-blue')"></span>
+                      <p class="font-semibold text-brand-dark dark:text-white mt-1" x-text="selectedProperty.area"></p>
+                      <p class="text-xs text-slate-500">sqft</p>
+                    </div>
+                  </div>
+                  <button @click="openSchedule(selectedProperty.id)" class="w-full py-3 rounded-xl bg-brand-blue text-white font-semibold hover:bg-brand-sky transition shadow-lg shadow-brand-blue/25 mb-3 focus-ring">Schedule Visit</button>
+                  <button @click="toggleWishlist(selectedProperty.id)"
+                          class="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition focus-ring dark:text-white"
+                          x-text="isWishlisted(selectedProperty.id) ? 'Saved to Wishlist' : 'Save to Wishlist'"></button>
+                </div>
+
+                <!-- Mortgage Calculator -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700">
+                  <h3 class="font-poppins font-semibold text-brand-dark dark:text-white mb-4">Mortgage Calculator</h3>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="text-xs text-slate-500">Home Price</label>
+                      <input x-model.number="mortgage.price" type="number" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:border-brand-blue dark:text-white" />
+                    </div>
+                    <div>
+                      <label class="text-xs text-slate-500">Down Payment</label>
+                      <input x-model.number="mortgage.down" type="number" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:border-brand-blue dark:text-white" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="text-xs text-slate-500">Interest %</label>
+                        <input x-model.number="mortgage.rate" type="number" step="0.1" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:border-brand-blue dark:text-white" />
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-500">Years</label>
+                        <input x-model.number="mortgage.years" type="number" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:border-brand-blue dark:text-white" />
+                      </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-brand-dark text-white text-center">
+                      <p class="text-sm text-slate-300">Estimated monthly</p>
+                      <p class="text-2xl font-bold text-brand-sky" x-text="formatPrice(calculateMortgage())"></p>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <!-- Similar Properties -->
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+              <h2 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-8">Similar Properties</h2>
+              <div class="grid md:grid-cols-3 gap-6">
+                <template x-for="p in similarProperties()" :key="p.id">
+                  <article @click="navigate('property',{id:p.id})" class="group cursor-pointer bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-slate-100 dark:border-slate-700">
+                    <div class="h-52 overflow-hidden">
+                      <img :src="p.image" :alt="p.title" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                    </div>
+                    <div class="p-5">
+                      <h3 class="font-poppins font-semibold text-brand-dark dark:text-white group-hover:text-brand-blue transition" x-text="p.title"></h3>
+                      <p class="text-brand-blue font-bold mt-1" x-text="formatPrice(p.price)"></p>
+                      <p class="text-sm text-slate-500 mt-1 flex items-center gap-1"><span x-html="icon('mapPin','w-3 h-3')"></span> <span x-text="p.location"></span></p>
+                    </div>
+                  </article>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <div x-show="currentPage === 'property' && !selectedProperty" class="container mx-auto px-4 pt-40 pb-40 text-center">
+          <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-6" x-html="icon('search','w-12 h-12')"></div>
+          <h2 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white">Property not found</h2>
+          <p class="text-slate-500 mt-2">The listing you are looking for does not exist.</p>
+          <button @click="navigate('properties')" class="mt-6 px-8 py-3 rounded-full bg-brand-blue text-white font-medium hover:bg-brand-sky transition">Browse Properties</button>
+        </div>
+      </section>
+
+      <!-- AGENTS PAGE -->
+      <section x-show="currentPage === 'agents'" x-transition.opacity>
+        <div class="pt-28 pb-12 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="font-poppins text-3xl md:text-5xl font-bold text-brand-dark dark:text-white">Our Agents</h1>
+            <p class="mt-2 text-slate-500 dark:text-slate-400">Trusted professionals to guide your journey.</p>
+          </div>
+        </div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <template x-for="agent in agents" :key="agent.id">
+              <div class="group bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-slate-100 dark:border-slate-700">
+                <div class="relative h-80 overflow-hidden">
+                  <img :src="agent.image" :alt="agent.name" loading="lazy" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
+                  <div class="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-brand-dark/90 to-transparent opacity-0 group-hover:opacity-100 transition flex gap-3 justify-center">
+                    <template x-for="s in ['facebook','twitter','linkedin']" :key="s">
+                      <a href="#" class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-brand-blue transition" aria-label="Social">
+                        <span x-html="icon(s,'w-4 h-4')"></span>
+                      </a>
+                    </template>
+                  </div>
+                </div>
+                <div class="p-6">
+                  <h3 class="font-poppins font-semibold text-xl text-brand-dark dark:text-white" x-text="agent.name"></h3>
+                  <p class="text-brand-blue text-sm font-medium mb-4" x-text="agent.role"></p>
+                  <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-700">
+                      <p class="font-bold text-brand-dark dark:text-white" x-text="agent.sold"></p>
+                      <p class="text-slate-500 text-xs">Sold</p>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-700">
+                      <p class="font-bold text-brand-dark dark:text-white" x-text="agent.exp"></p>
+                      <p class="text-slate-500 text-xs">Years</p>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-700">
+                      <p class="font-bold text-brand-dark dark:text-white" x-text="agent.active"></p>
+                      <p class="text-slate-500 text-xs">Active</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT PAGE -->
+      <section x-show="currentPage === 'about'" x-transition.opacity>
+        <div class="pt-28 pb-12 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="font-poppins text-3xl md:text-5xl font-bold text-brand-dark dark:text-white">About EstateX</h1>
+            <p class="mt-2 text-slate-500 dark:text-slate-400">Redefining the real estate experience.</p>
+          </div>
+        </div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div class="grid lg:grid-cols-2 gap-12 items-center mb-24">
+            <div class="relative rounded-2xl overflow-hidden h-[400px]">
+              <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1000&q=80" alt="Office" loading="lazy" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-tr from-brand-blue/40 to-transparent"></div>
+            </div>
+            <div>
+              <span class="text-brand-blue font-semibold uppercase text-sm">Our Story</span>
+              <h2 class="font-poppins text-3xl md:text-4xl font-bold text-brand-dark dark:text-white mt-2 mb-6">Helping people find the place they belong</h2>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                Founded in 2015, EstateX has grown from a small local agency into a premium global platform. We combine technology with human expertise to make every transaction transparent, efficient, and delightful.
+              </p>
+              <div class="grid grid-cols-3 gap-6">
+                <div>
+                  <p class="text-3xl font-bold text-brand-blue">8+</p>
+                  <p class="text-sm text-slate-500">Years</p>
+                </div>
+                <div>
+                  <p class="text-3xl font-bold text-brand-blue">50+</p>
+                  <p class="text-sm text-slate-500">Cities</p>
+                </div>
+                <div>
+                  <p class="text-3xl font-bold text-brand-blue">2k+</p>
+                  <p class="text-sm text-slate-500">Agents</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mission / Vision -->
+          <div class="grid md:grid-cols-2 gap-8 mb-24">
+            <div class="p-8 rounded-2xl bg-white dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700">
+              <div class="w-12 h-12 rounded-xl bg-brand-blue/10 text-brand-blue flex items-center justify-center mb-4" x-html="icon('target','w-6 h-6')"></div>
+              <h3 class="font-poppins text-xl font-bold text-brand-dark dark:text-white mb-3">Our Mission</h3>
+              <p class="text-slate-600 dark:text-slate-300">To democratize access to premium real estate through technology, transparency, and world-class service.</p>
+            </div>
+            <div class="p-8 rounded-2xl bg-white dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700">
+              <div class="w-12 h-12 rounded-xl bg-brand-sky/10 text-brand-sky flex items-center justify-center mb-4" x-html="icon('eye','w-6 h-6')"></div>
+              <h3 class="font-poppins text-xl font-bold text-brand-dark dark:text-white mb-3">Our Vision</h3>
+              <p class="text-slate-600 dark:text-slate-300">To become the most trusted real estate companion for buyers, sellers, and investors worldwide.</p>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="mb-24">
+            <h2 class="font-poppins text-3xl font-bold text-brand-dark dark:text-white text-center mb-12">Our Journey</h2>
+            <div class="relative border-l-2 border-brand-blue/30 ml-4 md:ml-1/2 space-y-12">
+              <template x-for="item in timeline" :key="item.year">
+                <div class="relative pl-8 md:pl-0">
+                  <div class="absolute -left-[9px] md:left-1/2 md:-ml-[9px] w-5 h-5 rounded-full bg-brand-blue border-4 border-white dark:border-brand-dark"></div>
+                  <div class="md:w-1/2 md:pr-12 md:text-right md:ml-auto">
+                    <p class="text-brand-blue font-bold text-lg" x-text="item.year"></p>
+                    <h3 class="font-poppins font-semibold text-brand-dark dark:text-white" x-text="item.title"></h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1" x-text="item.text"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT PAGE -->
+      <section x-show="currentPage === 'contact'" x-transition.opacity>
+        <div class="pt-28 pb-12 bg-slate-50 dark:bg-slate-900/50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="font-poppins text-3xl md:text-5xl font-bold text-brand-dark dark:text-white">Contact Us</h1>
+            <p class="mt-2 text-slate-500 dark:text-slate-400">We'd love to hear from you.</p>
+          </div>
+        </div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div class="grid lg:grid-cols-2 gap-12">
+            <!-- Form -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-100 dark:border-slate-700">
+              <h2 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-6">Send a message</h2>
+              <form @submit.prevent="submitContact" class="space-y-5">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Full Name</label>
+                  <input x-model="contact.name" type="text" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" :class="contact.errors.name ? 'border-red-500' : ''" />
+                  <p x-show="contact.errors.name" class="text-red-500 text-xs mt-1" x-text="contact.errors.name"></p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-5">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Email</label>
+                    <input x-model="contact.email" type="email" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" :class="contact.errors.email ? 'border-red-500' : ''" />
+                    <p x-show="contact.errors.email" class="text-red-500 text-xs mt-1" x-text="contact.errors.email"></p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Phone</label>
+                    <input x-model="contact.phone" type="tel" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Subject</label>
+                  <input x-model="contact.subject" type="text" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Message</label>
+                  <textarea x-model="contact.message" rows="4" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" :class="contact.errors.message ? 'border-red-500' : ''"></textarea>
+                  <p x-show="contact.errors.message" class="text-red-500 text-xs mt-1" x-text="contact.errors.message"></p>
+                </div>
+                <button type="submit" class="magnetic w-full py-3.5 rounded-xl bg-brand-blue text-white font-semibold hover:bg-brand-sky transition shadow-lg shadow-brand-blue/25 focus-ring">Send Message</button>
+              </form>
+            </div>
+
+            <!-- Details & Map -->
+            <div class="space-y-8">
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-100 dark:border-slate-700">
+                <h3 class="font-poppins text-xl font-bold text-brand-dark dark:text-white mb-6">Office Details</h3>
+                <div class="space-y-5">
+                  <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center shrink-0" x-html="icon('mapPin','w-5 h-5')"></div>
+                    <div>
+                      <p class="font-medium text-brand-dark dark:text-white">Headquarters</p>
+                      <p class="text-slate-500 dark:text-slate-400 text-sm">123 Skyline Avenue, Suite 500<br/>New York, NY 10001</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center shrink-0" x-html="icon('mail','w-5 h-5')"></div>
+                    <div>
+                      <p class="font-medium text-brand-dark dark:text-white">Email</p>
+                      <p class="text-slate-500 dark:text-slate-400 text-sm">contact@estatex.com</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center shrink-0" x-html="icon('phone','w-5 h-5')"></div>
+                    <div>
+                      <p class="font-medium text-brand-dark dark:text-white">Phone</p>
+                      <p class="text-slate-500 dark:text-slate-400 text-sm">+1 (555) 123-4567</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-2xl overflow-hidden h-80 bg-slate-100 dark:bg-slate-800 border dark:border-slate-700 relative">
+                <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80" alt="Map" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-50 dark:opacity-30" />
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="bg-white dark:bg-slate-800 rounded-xl px-6 py-3 shadow-lg text-center">
+                    <p class="font-semibold text-brand-dark dark:text-white">Map Placeholder</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ -->
+          <div class="mt-24 max-w-3xl mx-auto">
+            <h2 class="font-poppins text-3xl font-bold text-brand-dark dark:text-white text-center mb-10">Frequently Asked Questions</h2>
+            <div class="space-y-4">
+              <template x-for="(faq, idx) in faqs" :key="idx">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                  <button @click="faq.open = !faq.open" class="w-full flex items-center justify-between p-5 text-left focus-ring">
+                    <span class="font-medium text-brand-dark dark:text-white" x-text="faq.q"></span>
+                    <span x-html="icon('chevronDown','w-5 h-5 transition-transform')" :class="faq.open ? 'rotate-180' : ''"></span>
+                  </button>
+                  <div x-show="faq.open" x-collapse>
+                    <p class="px-5 pb-5 text-slate-600 dark:text-slate-300" x-text="faq.a"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 404 PAGE -->
+      <section x-show="currentPage === '404'" x-transition.opacity class="min-h-screen flex items-center justify-center pt-20">
+        <div class="text-center px-4">
+          <div class="text-9xl font-poppins font-bold text-gradient mb-4">404</div>
+          <h1 class="font-poppins text-3xl font-bold text-brand-dark dark:text-white mb-4">Page not found</h1>
+          <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">The page you're looking for doesn't exist or has been moved.</p>
+          <button @click="navigate('home')" class="magnetic px-8 py-3 rounded-full bg-brand-blue text-white font-semibold hover:bg-brand-sky transition shadow-lg shadow-brand-blue/30">Back Home</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer x-show="currentPage !== '404'" class="bg-slate-50 dark:bg-slate-900/50 border-t dark:border-slate-800 pt-20 pb-10">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div>
+            <a href="#home" @click.prevent="navigate('home')" class="flex items-center gap-2 mb-6">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-blue to-brand-sky flex items-center justify-center text-white font-poppins font-bold text-xl">E</div>
+              <span class="font-poppins font-bold text-2xl text-brand-dark dark:text-white">Estate<span class="text-brand-blue">X</span></span>
+            </a>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+              Premium real estate platform helping you discover, compare, and secure your dream property anywhere in the world.
+            </p>
+            <div class="flex gap-3">
+              <template x-for="s in ['facebook','twitter','instagram','linkedin']" :key="s">
+                <a href="#" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border dark:border-slate-700 flex items-center justify-center text-slate-500 hover:bg-brand-blue hover:text-white transition" aria-label="Social">
+                  <span x-html="icon(s,'w-4 h-4')"></span>
+                </a>
+              </template>
+            </div>
+          </div>
+          <div>
+            <h4 class="font-poppins font-semibold text-brand-dark dark:text-white mb-6">Quick Links</h4>
+            <ul class="space-y-3 text-sm">
+              <li><a href="#properties" @click.prevent="navigate('properties')" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Properties</a></li>
+              <li><a href="#agents" @click.prevent="navigate('agents')" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Agents</a></li>
+              <li><a href="#about" @click.prevent="navigate('about')" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">About</a></li>
+              <li><a href="#contact" @click.prevent="navigate('contact')" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-poppins font-semibold text-brand-dark dark:text-white mb-6">Company</h4>
+            <ul class="space-y-3 text-sm">
+              <li><a href="#" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Privacy Policy</a></li>
+              <li><a href="#" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Terms of Service</a></li>
+              <li><a href="#" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Careers</a></li>
+              <li><a href="#" class="text-slate-500 dark:text-slate-400 hover:text-brand-blue transition">Press</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-poppins font-semibold text-brand-dark dark:text-white mb-6">Newsletter</h4>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Subscribe for market insights and new listings.</p>
+            <form @submit.prevent="subscribeNewsletter" class="flex gap-2">
+              <input x-model="newsletterEmail" type="email" placeholder="Your email" class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 focus:outline-none focus:border-brand-blue dark:text-white text-sm" required />
+              <button type="submit" class="px-4 py-2.5 rounded-xl bg-brand-blue text-white hover:bg-brand-sky transition" aria-label="Subscribe">
+                <span x-html="icon('send','w-5 h-5')"></span>
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="border-t dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p class="text-sm text-slate-500 dark:text-slate-400">© <span x-text="new Date().getFullYear()"></span> EstateX. All rights reserved.</p>
+          <div class="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+            <span>English (US)</span>
+            <span>USD ($)</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Schedule Visit Modal -->
+    <div x-show="schedule.open"
+         x-transition.opacity
+         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="schedule-title">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="schedule.open = false"></div>
+      <div class="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+        <button @click="schedule.open = false" class="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500" aria-label="Close">
+          <span x-html="icon('x','w-5 h-5')"></span>
+        </button>
+        <h3 id="schedule-title" class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-1">Schedule a Visit</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-5">Book a private tour with one of our agents.</p>
+        <form @submit.prevent="submitSchedule" class="space-y-4">
+          <input x-model="schedule.name" type="text" placeholder="Full name" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+          <input x-model="schedule.email" type="email" placeholder="Email address" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+          <input x-model="schedule.phone" type="tel" placeholder="Phone number" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+          <div class="grid grid-cols-2 gap-4">
+            <input x-model="schedule.date" type="date" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+            <input x-model="schedule.time" type="time" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+          </div>
+          <textarea x-model="schedule.message" rows="3" placeholder="Message (optional)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white"></textarea>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-brand-blue text-white font-semibold hover:bg-brand-sky transition shadow-lg shadow-brand-blue/25">Confirm Visit</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div x-show="lightbox.open"
+         x-transition.opacity
+         class="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+         role="dialog"
+         aria-modal="true">
+      <button @click="lightbox.open = false" class="absolute top-5 right-5 text-white/70 hover:text-white p-2" aria-label="Close lightbox">
+        <span x-html="icon('x','w-8 h-8')"></span>
+      </button>
+      <button @click="prevImage" class="absolute left-4 md:left-8 text-white/70 hover:text-white p-2" aria-label="Previous image">
+        <span x-html="icon('chevronLeft','w-10 h-10')"></span>
+      </button>
+      <img :src="lightbox.images[lightbox.index]" alt="Gallery" class="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl" />
+      <button @click="nextImage" class="absolute right-4 md:right-8 text-white/70 hover:text-white p-2" aria-label="Next image">
+        <span x-html="icon('chevronRight','w-10 h-10')"></span>
+      </button>
+      <p class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+        <span x-text="lightbox.index + 1"></span> / <span x-text="lightbox.images.length"></span>
+      </p>
+    </div>
+
+    <!-- Comparison Modal -->
+    <div x-show="compareOpen"
+         x-transition.opacity
+         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+         role="dialog"
+         aria-modal="true">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="compareOpen = false"></div>
+      <div class="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-auto p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white">Compare Properties</h3>
+          <button @click="compareOpen = false" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500" aria-label="Close">
+            <span x-html="icon('x','w-5 h-5')"></span>
+          </button>
+        </div>
+        <div x-show="compareProperties().length === 0" class="text-center py-12 text-slate-500">
+          No properties selected for comparison.
+        </div>
+        <div x-show="compareProperties().length > 0" class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b dark:border-slate-700">
+                <th class="text-left py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">Feature</th>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <th class="py-3 px-4 text-brand-dark dark:text-white font-poppins min-w-[180px]" x-text="p.title"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b dark:border-slate-700">
+                <td class="py-3 px-4 text-slate-500">Image</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4"><img :src="p.image" class="w-full h-28 object-cover rounded-xl" :alt="p.title" /></td>
+                </template>
+              </tr>
+              <tr class="border-b dark:border-slate-700">
+                <td class="py-3 px-4 text-slate-500">Price</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4 text-brand-blue font-bold" x-text="formatPrice(p.price)"></td>
+                </template>
+              </tr>
+              <tr class="border-b dark:border-slate-700">
+                <td class="py-3 px-4 text-slate-500">Location</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4 text-slate-700 dark:text-slate-200" x-text="p.location"></td>
+                </template>
+              </tr>
+              <tr class="border-b dark:border-slate-700">
+                <td class="py-3 px-4 text-slate-500">Beds</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4 text-slate-700 dark:text-slate-200" x-text="p.beds"></td>
+                </template>
+              </tr>
+              <tr class="border-b dark:border-slate-700">
+                <td class="py-3 px-4 text-slate-500">Baths</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4 text-slate-700 dark:text-slate-200" x-text="p.baths"></td>
+                </template>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 text-slate-500">Area</td>
+                <template x-for="p in compareProperties()" :key="p.id">
+                  <td class="py-3 px-4 text-slate-700 dark:text-slate-200" x-text="p.area + ' sqft'"></td>
+                </template>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare Floating Bar -->
+    <div x-show="compareList.length > 0"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-y-full opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-y-0 opacity-100"
+         x-transition:leave-end="translate-y-full opacity-0"
+         class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-brand-dark text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4">
+      <span class="text-sm"><span x-text="compareList.length"></span> selected</span>
+      <button @click="compareOpen = true" class="text-sm font-medium bg-brand-blue px-4 py-1.5 rounded-full hover:bg-brand-sky transition">Compare</button>
+      <button @click="compareList = []" class="text-sm text-slate-300 hover:text-white">Clear</button>
+    </div>
+
+    <!-- Newsletter Popup -->
+    <div x-show="newsletterOpen"
+         x-transition.opacity
+         class="fixed inset-0 z-[75] flex items-center justify-center p-4"
+         role="dialog"
+         aria-modal="true">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeNewsletter"></div>
+      <div class="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-8 shadow-2xl overflow-hidden">
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-brand-blue to-brand-sky"></div>
+        <button @click="closeNewsletter" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label="Close">
+          <span x-html="icon('x','w-5 h-5')"></span>
+        </button>
+        <div class="w-14 h-14 rounded-2xl bg-brand-blue/10 text-brand-blue flex items-center justify-center mb-4" x-html="icon('mail','w-7 h-7')"></div>
+        <h3 class="font-poppins text-2xl font-bold text-brand-dark dark:text-white mb-2">Stay in the loop</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Get exclusive listings and market updates delivered to your inbox.</p>
+        <form @submit.prevent="subscribePopup" class="space-y-3">
+          <input x-model="popupEmail" type="email" placeholder="Enter your email" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:border-brand-blue dark:text-white" />
+          <button type="submit" class="w-full py-3 rounded-xl bg-brand-blue text-white font-semibold hover:bg-brand-sky transition">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div x-show="cookieAccepted === null"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-y-full"
+         x-transition:enter-end="translate-y-0"
+         class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t dark:border-slate-800 shadow-2xl p-4">
+      <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm text-slate-600 dark:text-slate-300">We use cookies to enhance your experience and analyze site traffic.</p>
+        <div class="flex gap-3">
+          <button @click="cookieAccepted = 'false'" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">Decline</button>
+          <button @click="acceptCookie" class="px-5 py-2 text-sm rounded-full bg-brand-blue text-white hover:bg-brand-sky transition">Accept</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="fixed top-24 right-4 z-[90] space-y-3 w-80">
+      <template x-for="t in toasts" :key="t.id">
+        <div x-show="true"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-x-full opacity-0"
+             x-transition:enter-end="translate-x-0 opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="translate-x-0 opacity-100"
+             x-transition:leave-end="translate-x-full opacity-0"
+             class="flex items-start gap-3 p-4 rounded-xl shadow-xl border"
+             :class="t.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-brand-dark dark:text-white'">
+          <span x-html="t.type === 'error' ? icon('alertCircle','w-5 h-5 text-red-500') : icon('checkCircle','w-5 h-5 text-emerald-500')"></span>
+          <p class="text-sm" x-text="t.message"></p>
+        </div>
+      </template>
+    </div>
+
+    <!-- Back to Top -->
+    <button x-show="scrolled"
+            @click="window.scrollTo({top:0, behavior:'smooth'})"
+            class="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-brand-blue text-white shadow-lg shadow-brand-blue/30 flex items-center justify-center hover:bg-brand-sky transition focus-ring"
+            aria-label="Back to top">
+      <span x-html="icon('arrowUp','w-5 h-5')"></span>
+    </button>
+
+    <!-- Floating Contact -->
+    <a href="https://wa.me/15551234567" target="_blank" rel="noopener"
+       class="fixed bottom-6 right-20 z-40 w-12 h-12 rounded-full bg-emerald-500 text-white shadow-lg flex items-center justify-center hover:scale-110 transition focus-ring"
+       aria-label="Chat on WhatsApp">
+      <span x-html="icon('phone','w-5 h-5')"></span>
+    </a>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="js/app.js"></script>
+  </body>
+</html>
